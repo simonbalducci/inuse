@@ -1,44 +1,57 @@
 import React, { Component } from "react";
-import users from "../data/user.json";
 import { Container, Row, Col } from "react-bootstrap";
-
-function searchingFor(search) {
-  return function(x) {
-    return x.login.toLowerCase().includes(search.toLowerCase()) || !search;
-  };
-}
 
 class UserList extends Component {
   constructor() {
     super();
     this.state = {
-      users: users,
-      search: ""
+      login: null,
+      avatar_url: null,
+      id: null,
+      followers: null,
+      following: null,
+      created_at: null
     };
   }
 
-  searchUser = event => {
-    this.setState({ search: event.target.value });
-  };
+  getUser(login) {
+    return fetch(`https://api.github.com/users/${login}`)
+      .then(response => response.json())
+      .then(response => {
+        return response;
+      });
+  }
 
-  renderUser() {
-    if (this.state.search === '') return null;
-    return (
-      <ul>
-        {this.state.users.items
-          .filter(searchingFor(this.state.search))
-          .map((userDetail, i) => (
-            <div key={i}>
-              <h3>{userDetail.login}</h3>
-              <img src={userDetail.avatar_url} alt="" />
-            </div>
-          ))}
-      </ul>
-    );
+  async handleSubmit(event) {
+    event.preventDefault();
+    let user = await this.getUser(this.refs.login.value);
+    this.setState({ login: user.login,
+        avatar_url: user.avatar_url,
+        created_at: user.created_at,
+        followers: user.followers,
+        following: user.following,
+        id: user.id
+     });
   }
 
   render() {
-    console.log("props", this.props);
+    let user;
+    if (this.state.login) {
+      user = (
+        <Row>
+          <Col md={2}>
+            <img src={this.state.avatar_url} alt="" width="150" height="150" />
+          </Col>
+          <Col md={10}>
+            <p>Login {this.state.login}</p>
+            <p>Created At {this.state.created_at}</p>
+            <p>Id {this.state.id}</p>
+            <p>Followers {this.state.followers}</p>
+            <p>Following {this.state.following}</p>
+          </Col>
+        </Row>
+      );
+    }
     return (
       <Container fluid>
         <Row className="justify-content-md-center">
@@ -47,20 +60,15 @@ class UserList extends Component {
               <h2>UserList</h2>
               <input
                 type="text"
-                placeholder="Enter a username"
+                placeholder="Search GitHub Username"
                 ref="login"
-                onChange={this.searchUser}
+                onChange={event => this.handleSubmit(event)}
               />
             </form>
-            <ul>
-              {this.state.users.items.map((user, i) => (
-                <li key={i}>{user.login}</li>
-              ))}
-            </ul>
           </Col>
           <Col md={10}>
             <h2>UserDetail</h2>
-            {this.renderUser()}
+            {user}
           </Col>
         </Row>
       </Container>
